@@ -2,7 +2,9 @@ package org;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.util.Random;
@@ -15,9 +17,12 @@ public class Automation {
 
         int like = 0;
         int dislike = 0;
+        int matchCounter =0;
+
         WebDriverManager.chromedriver().setup();
         WebDriver driver = new ChromeDriver();
-        driver.manage().timeouts().implicitlyWait(60, TimeUnit.SECONDS);
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
         driver.get("https://bumble.com/get-started");
         driver.findElement(By.xpath("(//span[@class='action text-break-words'])[2]")).click();
         Scanner myObj = new Scanner(System.in);
@@ -41,20 +46,42 @@ public class Automation {
         } else {
             while (true)
             {
+                //The below condition is necessary in case of there is a match then will help to continue for swapping
+                if (isElementPresent(driver))
+                {
+                    matchCounter++;
+                WebElement element = driver.findElement(By.xpath("(//span[@class='action text-break-words'])[2]"));
+                element.click();
+                }
+
                 boolean result = checkPercentage(likePercentage );
                 randomDelay();
                 if(result)
                 {
-                    driver.findElement(By.xpath("//span[@data-qa-icon-name='floating-action-yes']")).click();
-                    like ++;
+                    try {
+                        driver.findElement(By.xpath("//span[@data-qa-icon-name='floating-action-yes']")).click();
+                        like++;
+                    }
+                    catch (org.openqa.selenium.StaleElementReferenceException ex)
+                    {
+                        driver.findElement(By.xpath("//span[@data-qa-icon-name='floating-action-yes']")).click();
+                        like++;
+                    }
                 }
                 else
+                {
+                    try {
+                        driver.findElement(By.xpath("//span[@data-qa-icon-name='floating-action-no']")).click();
+                        dislike ++;
+                }
+                catch (org.openqa.selenium.StaleElementReferenceException ex)
                 {
                     driver.findElement(By.xpath("//span[@data-qa-icon-name='floating-action-no']")).click();
                     dislike ++;
                 }
+                }
 
-                System.out.println("You liked "+ like+" and disliked "+dislike + "Cards");
+                System.out.println("You liked "+ like+" and disliked "+dislike + "Cards and until now "+matchCounter +" time the system clicked continue swapping");
             }
         }
 
@@ -71,7 +98,17 @@ public class Automation {
 
     public static void randomDelay() throws InterruptedException {
         Random random = new Random();
-        int delay = 500 + random.nextInt(1500); // Generates a random number between 500 and 2000
+        int delay = random.nextInt(400); // Generates a random number between 500 and 2000
         Thread.sleep(delay);
+    }
+    public static boolean isElementPresent(WebDriver driver) {
+        try {
+            driver.manage().timeouts().implicitlyWait(500, TimeUnit.MILLISECONDS);
+            driver.findElement(By.xpath("(//span[@class='action text-break-words'])[2]"));
+            driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
     }
 }
